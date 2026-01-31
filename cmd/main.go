@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,6 +19,11 @@ import (
 
 func main() {
 	// Сначала создаю slog для всех ошибок и комментариев
+	l := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level:     slog.LevelDebug,
+		AddSource: true,
+	}))
+	slog.SetDefault(l)
 
 	// Потом подтягиваю конфигурацию
 	cfg, err := config.Load()
