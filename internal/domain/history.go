@@ -39,6 +39,9 @@ type Chapter struct {
 	Title string        `json:"title"` // Заголовок главы
 	Parts []PartChapter `json:"part"`  // Части главы
 }
+
+type Chapters []Chapter
+
 type History struct {
 	UUID        uuid.UUID   `json:"uuid" db:"uuid"`             // Публичный ID для клиента
 	BookTitle   string      `json:"book_title" db:"book_title"` // Краткое название (для списка)
@@ -52,7 +55,7 @@ type History struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"` // Меняется при изменении статуса
 
-	Chapters []Chapter `json:"chapters" db:"chapters"`
+	Chapters Chapters `json:"chapters" db:"chapters"`
 }
 
 type HistoryRepository interface {
