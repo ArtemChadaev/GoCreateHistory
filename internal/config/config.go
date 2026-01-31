@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/spf13/viper"
 )
@@ -26,37 +26,29 @@ type Config struct {
 
 func Load() (*Config, error) {
 	v := viper.New()
-	log.Println("Loading config...")
 
-	v.SetConfigName(".env")
-	v.SetConfigType("env")
-	v.AddConfigPath(".")
+	// 1. Разрешаем Viper автоматически искать переменные в системе
 	v.AutomaticEnv()
 
-	// Пытаемся прочитать файл
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Println("Note: .env file not found, using system environment variables")
-		} else {
-			return nil, err
-		}
+	// 2. Список ключей, которые Docker Compose прокидывает в контейнер
+	// Мы явно "привязываем" их, чтобы Unmarshal смог наполнить структуру
+	keys := []string{
+		"PORT",
+		"COMFU_UI_URL",
+		"DB_HOST", "DB_PORT", "DB_USER", "DB_NAME", "DB_PASSWORD",
+		"REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD",
 	}
 
-	// ВАЖНО: Явно привязываем каждый ключ, чтобы Unmarshal сработал без файла
-	keys := []string{
-		"PORT", "API_KEY", "STATS_TIME_WINDOW_MINUTES", "DETECTION_RADIUS",
-		"WEBHOOK_URL", "DB_HOST", "DB_PORT", "DB_USER", "DB_NAME",
-		"DB_PASSWORD", "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD",
-	}
 	for _, key := range keys {
 		if err := v.BindEnv(key); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("ошибка привязки переменной %s: %w", key, err)
 		}
 	}
 
 	var cfg Config
+	// 3. Заполняем структуру данными из привязанных переменных окружения
 	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ошибка распаковки конфига: %w", err)
 	}
 
 	return &cfg, nil

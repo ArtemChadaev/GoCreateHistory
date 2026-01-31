@@ -15,9 +15,8 @@ services:
       - DB_NAME=${DB_NAME}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
-      - API_KEY=${API_KEY}
-      - WEBHOOK_URL=${WEBHOOK_URL}
-      - STATS_TIME_WINDOW_MINUTES=${STATS_TIME_WINDOW_MINUTES}
+      - COMFU_UI_URL=${COMFU_UI_URL}
+      - PORT=${PORT}
     depends_on:
       postgres:
         condition: service_healthy
