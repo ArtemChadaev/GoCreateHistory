@@ -43,10 +43,12 @@ func main() {
 	services := service.NewService(repos)
 	handlers := handler.NewHandler(services)
 
+	router := handlers.Router()
+
 	srv := new(domain.Server)
 	go func() {
-		if err := srv.Run(cfg.Port, handlers.Routes()); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("HTTP server error: %v", err)
+		if err := srv.Run(cfg.Port, router); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("Ошибка при запуске сервера: %s\n", err)
 		}
 	}()
 	<-ctx.Done()

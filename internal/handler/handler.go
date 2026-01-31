@@ -18,7 +18,7 @@ func NewHandler(service *service.Service) *Handler {
 	}
 }
 
-func (h *Handler) Router() {
+func (h *Handler) Router() chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -33,4 +33,6 @@ func (h *Handler) Router() {
 			//r.Post("/")
 		})
 	})
+
+	return r
 }
