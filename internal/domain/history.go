@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,45 +39,45 @@ type Chapter struct {
 	Parts []PartChapter `json:"part"`  // Части главы
 }
 type History struct {
-	UUID        string      `json:"uuid"`       // Публичный ID для клиента
-	BookTitle   string      `json:"book_title"` // Краткое название (для списка)
-	UserRequest UserRequest `json:"user_request"`
+	UUID        uuid.UUID   `json:"uuid" db:"uuid"`             // Публичный ID для клиента
+	BookTitle   string      `json:"book_title" db:"book_title"` // Краткое название (для списка)
+	UserRequest UserRequest `json:"user_request" db:"user_request"`
 
 	// Состояние (особенно важно для генерации)
-	Status   HistoryStatus `json:"status"`          // "pending", "completed", "failed"
-	ErrorMsg string        `json:"error,omitempty"` // Почему не создалось?
+	Status   HistoryStatus `json:"status" db:"status"`         // "pending", "completed", "failed"
+	ErrorMsg string        `json:"error,omitempty" db:"error"` // Почему не создалось?
 
 	// Временные метки (Timestamps)
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"` // Меняется при изменении статуса
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"` // Меняется при изменении статуса
 
-	Chapters []Chapter `json:"chapter"`
+	Chapters []Chapter `json:"chapters" db:"chapters"`
 }
 
 type HistoryRepository interface {
 	// Create Создать запись
-	Create(h *History) error
+	Create(ctx context.Context, h *History) error
 	// GetByID Получить историю по ID
-	GetByID(id uuid.UUID) (*History, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*History, error)
 	// GetByUserID получить все истории персонажа
-	GetByUserID(id int) (*[]History, error)
+	GetByUserID(ctx context.Context, id int) (*[]History, error)
 	// Update Обновить данные (статус, текст или новую картинку)
-	Update(h *History) error
+	Update(ctx context.Context, h *History) error
 	// Delete Удаляет все лишнее оставляя только UserRequest
-	Delete(id uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID) error
 	// Freeze Меняет статус на остановленно
-	Freeze(id uuid.UUID, frozen bool) error
+	Freeze(ctx context.Context, id uuid.UUID, frozen bool) error
 	// CountActiveTasks Посчитать, сколько задач сейчас "в работе" у юзера
-	CountActiveTasks(userID string) (int, error)
+	CountActiveTasks(ctx context.Context, userID string) (int, error)
 }
 
 type HistoryService interface {
 	// Create Проверяет лимит и создает историю
-	Create(req UserRequest) (hID uuid.UUID, err error)
+	Create(ctx context.Context, req UserRequest) (hID uuid.UUID, err error)
 	// Get Просто возвращает текущее состояние из БД
-	Get(id uuid.UUID) (*History, error)
+	Get(ctx context.Context, id uuid.UUID) (*History, error)
 	// Freeze Поставить на паузу историю
-	Freeze(id uuid.UUID, frozen bool) error
+	Freeze(ctx context.Context, id uuid.UUID, frozen bool) error
 	// Delete Удаляет историю оставляя запрос
-	Delete(id uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
