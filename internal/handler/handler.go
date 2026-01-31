@@ -25,8 +25,11 @@ func (h *Handler) Router() chi.Router {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Use(middleware.Heartbeat("/ping"))
+	r.Use(h.loggingMiddleware)
 
 	r.Route("/history", func(r chi.Router) {
+		r.Use(h.auth)
+		r.Post("/", h.createHistory)
 		//r.Get("/", getAll)
 
 		r.Route("/{id}", func(r chi.Router) {
