@@ -17,16 +17,20 @@ import (
 )
 
 func main() {
+	// Сначала создаю slog для всех ошибок и комментариев
+
+	// Потом подтягиваю конфигурацию
 	cfg, err := config.Load()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Создаю контекст для выхода из программы
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// 1. Инициализация ресурсов (БД и Redis)
+	// Инициализация ресурсов БД
 	db, err := repository.NewPostgresDB(repository.PostgresConfig{
 		Host:     cfg.DBHost,
 		Port:     cfg.DBPort,
@@ -39,10 +43,12 @@ func main() {
 		log.Fatalf("failed to initialize db: %s", err.Error())
 	}
 
+	// Вызов всех слоёв
 	repos := repository.NewRepository(db)
 	services := service.NewService(repos)
 	handlers := handler.NewHandler(services)
 
+	// Запуск сервера http
 	router := handlers.Router()
 
 	srv := new(domain.Server)
@@ -51,5 +57,7 @@ func main() {
 			log.Fatalf("Ошибка при запуске сервера: %s\n", err)
 		}
 	}()
+
+	// Выход из программы
 	<-ctx.Done()
 }
