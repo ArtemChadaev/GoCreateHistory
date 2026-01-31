@@ -19,8 +19,9 @@ const (
 	StatusDelete    HistoryStatus = "delete"
 )
 
+// TODO: Сделать валидатор для запроса dtc(или другое название) validate
 type UserRequest struct {
-	UserID      int    `json:"user_id"`     // Чья это история (Ownership)
+	UserID      int    `json:"-"`           // Чья это история (Ownership), не должна ни получаться ни возвращаться
 	Description string `json:"description"` // Основное описание истории
 	TokenSize   int    `json:"token_size"`  // Размер истории в токенах
 	ImageSize   int    `json:"image_size"`  // Количество картинок в запросе
