@@ -18,8 +18,8 @@ func NewHistoryRepository(db *sqlx.DB) domain.HistoryRepository {
 
 func (r *historyRepository) Create(ctx context.Context, h *domain.History) error {
 	query := `
-	INSERT INTO history (uuid, book_title, user_request, status, error, created_at, update_at, chapters) 
-	VALUES (:uuid, :book_title, :user_request, :status, :error, :created_at, :update_at, :chapters)
+	INSERT INTO history (uuid, user_request) 
+	VALUES (:uuid, :user_request)
 	`
 	_, err := r.db.NamedExecContext(ctx, query, h)
 	if err != nil {
