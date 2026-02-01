@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ArtemChadaev/GoCreateHistory/pkg/logger"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
@@ -48,10 +49,11 @@ func (h *Handler) auth(next http.Handler) http.Handler {
 
 		userID := 123
 
-		// Оборачиваем контекст: добавляем userID для бизнес-логики и для логов
+		// Оборачиваем контекст: добавляем userID для бизнес-логики
 		ctx := context.WithValue(r.Context(), "user_id", userID)
-		//TODO: Сделать контекст с user_id после создания slog
-		//ctx = logger.WithValue(ctx, "user_id", userID) // Наш хелпер для slog
+
+		// Контекст для логирования
+		ctx = logger.WithValue(ctx, "user_id", userID)
 
 		// Передаем обновленный контекст дальше
 		next.ServeHTTP(w, r.WithContext(ctx))
