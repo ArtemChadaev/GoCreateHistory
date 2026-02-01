@@ -2,9 +2,11 @@ services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev # Потом убрать в проде
     env_file:
       - .env
+    volumes:
+      - .:/app # И это убрать
     ports:
       - "${PORT}:${PORT}"
     environment:
