@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -29,7 +28,8 @@ func main() {
 	cfg, err := config.Load()
 
 	if err != nil {
-		log.Fatal(err)
+		l.Error("Config", err.Error())
+		os.Exit(1)
 	}
 
 	// Создаю контекст для выхода из программы
@@ -46,7 +46,8 @@ func main() {
 		SSLMode:  "disable",
 	})
 	if err != nil {
-		log.Fatalf("failed to initialize db: %s", err.Error())
+		l.Error("DB", err.Error())
+		os.Exit(1)
 	}
 
 	// Вызов всех слоёв
@@ -60,7 +61,8 @@ func main() {
 	srv := new(domain.Server)
 	go func() {
 		if err := srv.Run(cfg.Port, router); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("Ошибка при запуске сервера: %s\n", err)
+			l.Error("Server", err.Error())
+			os.Exit(1)
 		}
 	}()
 

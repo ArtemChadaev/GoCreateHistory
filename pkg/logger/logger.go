@@ -7,18 +7,44 @@ import (
 
 type ctxKey string
 
-const loggerKey ctxKey = "logger"
+const fieldsKey ctxKey = "log_fields"
 
-// WithValue добавляет логгер с предустановленными полями в контекст
+// WithValue добавляет поле в список полей контекста
 func WithValue(ctx context.Context, key string, value any) context.Context {
-	l := slog.Default().With(slog.Any(key, value))
-	return context.WithValue(ctx, loggerKey, l)
+	fields, _ := ctx.Value(fieldsKey).([]slog.Attr)
+	newFields := append(fields, slog.Any(key, value))
+	return context.WithValue(ctx, fieldsKey, newFields)
 }
 
-// FromContext достает логгер из контекста или возвращает дефолтный
-func FromContext(ctx context.Context) *slog.Logger {
-	if l, ok := ctx.Value(loggerKey).(*slog.Logger); ok {
-		return l
+// ErrorWithContext создает лог с ошибкой, вытягивая всё из контекста
+// TODO: Переделать чтобы бли возвращал логгер а не это
+func LogError(ctx context.Context, msg string, err error) {
+	fields, _ := ctx.Value(fieldsKey).([]slog.Attr)
+
+	attrs := make([]any, len(fields)+1)
+	for i, v := range fields {
+		attrs[i] = v
 	}
-	return slog.Default()
+	attrs[len(fields)] = slog.Any("error", err.Error())
+
+	slog.ErrorContext(ctx, msg, attrs...)
 }
+
+// TODO: Сделать лог чтобы сохранялся в кастомную ошибку
+type SlogError struct {
+	Msg    string
+	Err    error
+	Fields map[string]any
+}
+
+//func (e *SlogError) Error() string {
+//	return e.Err.Error()
+//}
+//
+//func (e *SlogError) Unwrap() error {
+//
+//}
+//
+//func (e *SlogError) WrapError(ctx context.Context, msg string, err error) SlogError {
+//
+//}

@@ -20,12 +20,14 @@ func (h *Handler) loggingMiddleware(next http.Handler) http.Handler {
 		ip := r.RemoteAddr
 
 		//TODO: Когда разберусь подумаю менять ли slog тут
+
 		//Лог о начале запроса
-		slog.Info("request started",
-			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
-			slog.String("ip", ip),
-		)
+		ctx := logger.WithValue(r.Context(), "ip", ip)
+		ctx = logger.WithValue(ctx, "path", r.URL.Path)
+		ctx = logger.WithValue(ctx, "method", r.Method)
+
+		l := logger.FromContext(ctx)
+		l.Info("request started")
 
 		// Оборачиваем ResponseWriter, чтобы узнать статус-код в конце
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
@@ -34,9 +36,7 @@ func (h *Handler) loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(ww, r)
 
 		// Лог о завершении запроса
-		slog.Info("request completed",
-			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
+		l.Info("request completed",
 			slog.Int("status", ww.Status()),
 			slog.Duration("duration", time.Since(start)),
 		)
