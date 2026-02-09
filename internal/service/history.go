@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/ArtemChadaev/GoCreateHistory/internal/domain"
+	"github.com/ArtemChadaev/GoCreateHistory/pkg/logger"
 	"github.com/google/uuid"
 )
 
@@ -29,8 +31,13 @@ func (s *historyService) Create(ctx context.Context, req domain.UserRequest) (hI
 	}
 	err = s.repo.Create(ctx, history)
 	if err != nil {
-		return
+		return hID, logger.WithLog(err,
+			slog.String("op", "history.Create"),
+			slog.Any("history", history),
+		)
 	}
+
+	logger.Info(ctx, "create history success", slog.String("history_ID", hID.String()))
 	// TODO: Сделать в канал запись про ид чтобы потихоньку начинал делать, скорее всего в отдельной горутине
 	return hID, nil
 }
@@ -41,9 +48,27 @@ func (s *historyService) Get(ctx context.Context, id uuid.UUID) (*domain.History
 
 func (s *historyService) Freeze(ctx context.Context, id uuid.UUID, frozen bool) error {
 	// TODO: Сделать чтобы убирался из очереди для создания
-	return s.repo.Freeze(ctx, id, frozen)
+	if err := s.repo.Freeze(ctx, id, frozen); err != nil {
+		return logger.WithLog(err,
+			slog.String("op", "history.Freeze"),
+			slog.String("history_ID", id.String()),
+			slog.Bool("frozen", frozen),
+		)
+	}
+	logger.Info(ctx, "freeze or unfreeze history success",
+		slog.String("history_ID", id.String()),
+		slog.Bool("frozen", frozen),
+	)
+	return nil
 }
 
 func (s *historyService) Delete(ctx context.Context, id uuid.UUID) error {
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return logger.WithLog(err,
+			slog.String("op", "history.Delete"),
+			slog.String("history_ID", id.String()),
+		)
+	}
+	logger.Info(ctx, "delete history success", slog.String("history_ID", id.String()))
+	return nil
 }
