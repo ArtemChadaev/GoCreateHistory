@@ -69,6 +69,22 @@ func WithLog(err error, attrs ...slog.Attr) error {
 	}
 }
 
+// WrapWithContext извлекает все поля логов из контекста и прикрепляет их к ошибке.
+func WrapWithContext(ctx context.Context, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	// 1. Достаем поля из контекста
+	ctxData := FromContext(ctx)
+	if len(ctxData.Fields) == 0 {
+		return err // В контексте ничего нет, возвращаем ошибку как есть
+	}
+
+	// 2. Прикрепляем эти поля к ошибке через нашу существующую функцию
+	return WithLog(err, ctxData.Fields...)
+}
+
 // --- Функции логирования ---
 
 // Info логирует сообщение, автоматически подмешивая поля из контекста.

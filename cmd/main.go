@@ -17,18 +17,19 @@ import (
 )
 
 func main() {
+	// Будто бы пока не надо пусть повесит но скорее всего под вырез
 	// Сначала создаю slog для всех ошибок и комментариев
-	l := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level:     slog.LevelDebug,
-		AddSource: true,
-	}))
-	slog.SetDefault(l)
+	//l := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	//	Level:     slog.LevelDebug,
+	//	AddSource: true,
+	//}))
+	//slog.SetDefault(l)
 
 	// Потом подтягиваю конфигурацию
 	cfg, err := config.Load()
 
 	if err != nil {
-		l.Error("Config", err.Error())
+		slog.Error("Config Die", err.Error())
 		os.Exit(1)
 	}
 
@@ -46,7 +47,7 @@ func main() {
 		SSLMode:  "disable",
 	})
 	if err != nil {
-		l.Error("DB", err.Error())
+		slog.Error("DB Die", err.Error())
 		os.Exit(1)
 	}
 
@@ -61,7 +62,7 @@ func main() {
 	srv := new(domain.Server)
 	go func() {
 		if err := srv.Run(cfg.Port, router); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			l.Error("Server", err.Error())
+			slog.Error("Server Die", err.Error())
 			os.Exit(1)
 		}
 	}()

@@ -15,19 +15,12 @@ func (h *Handler) loggingMiddleware(next http.Handler) http.Handler {
 		// Начинаем отсчет времени
 		start := time.Now()
 
-		// Достаем IP. Если ты за прокси (Nginx/Docker),
-		// лучше использовать r.Header.Get("X-Forwarded-For")
-		ip := r.RemoteAddr
-
-		//TODO: Когда разберусь подумаю менять ли slog тут
-
 		//Лог о начале запроса
-		ctx := logger.WithValue(r.Context(), "ip", ip)
-		ctx = logger.WithValue(ctx, "path", r.URL.Path)
-		ctx = logger.WithValue(ctx, "method", r.Method)
+		ctx := logger.WithFields(r.Context(),
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path))
 
-		l := logger.FromContext(ctx)
-		l.Info("request started")
+		logger.Info(ctx, "start request")
 
 		// Оборачиваем ResponseWriter, чтобы узнать статус-код в конце
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
@@ -36,7 +29,7 @@ func (h *Handler) loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(ww, r)
 
 		// Лог о завершении запроса
-		l.Info("request completed",
+		logger.Info(ctx, "request completed",
 			slog.Int("status", ww.Status()),
 			slog.Duration("duration", time.Since(start)),
 		)
@@ -53,7 +46,7 @@ func (h *Handler) auth(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), "user_id", userID)
 
 		// Контекст для логирования
-		ctx = logger.WithValue(ctx, "user_id", userID)
+		ctx = logger.WithField(ctx, "user_id", userID)
 
 		// Передаем обновленный контекст дальше
 		next.ServeHTTP(w, r.WithContext(ctx))
