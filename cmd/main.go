@@ -14,18 +14,11 @@ import (
 	"github.com/ArtemChadaev/GoCreateHistory/internal/handler"
 	"github.com/ArtemChadaev/GoCreateHistory/internal/repository"
 	"github.com/ArtemChadaev/GoCreateHistory/internal/service"
+	"github.com/ArtemChadaev/GoCreateHistory/pkg/logger"
 )
 
 func main() {
-	// Будто бы пока не надо пусть повесит но скорее всего под вырез
-	// Сначала создаю slog для всех ошибок и комментариев
-	//l := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-	//	Level:     slog.LevelDebug,
-	//	AddSource: true,
-	//}))
-	//slog.SetDefault(l)
-
-	// Потом подтягиваю конфигурацию
+	// Подтягиваю конфигурацию
 	cfg, err := config.Load()
 
 	if err != nil {
@@ -36,6 +29,9 @@ func main() {
 	// Создаю контекст для выхода из программы
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// Логгер смотрю какой ставить по ситуации
+	logger.InitLogger(cfg.AppEnv)
 
 	// Инициализация ресурсов БД
 	db, err := repository.NewPostgresDB(repository.PostgresConfig{

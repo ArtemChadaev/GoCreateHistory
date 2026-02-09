@@ -4,7 +4,23 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"os"
 )
+
+func InitLogger(app string) {
+	var handler slog.Handler
+	opts := &slog.HandlerOptions{AddSource: true}
+
+	if app == "production" {
+		// В продакшене — строгий JSON для машин (Loki/ELK)
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	} else {
+		// В разработке — красивый текст для людей
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	}
+
+	slog.SetDefault(slog.New(handler))
+}
 
 // ctxKey — приватный тип для ключа контекста, чтобы избежать коллизий
 type ctxKey struct{}
