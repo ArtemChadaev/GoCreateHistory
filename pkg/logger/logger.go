@@ -2,49 +2,123 @@ package logger
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 )
 
-type ctxKey string
+// ctxKey — приватный тип для ключа контекста, чтобы избежать коллизий
+type ctxKey struct{}
 
-const fieldsKey ctxKey = "log_fields"
-
-// WithValue добавляет поле в список полей контекста
-func WithValue(ctx context.Context, key string, value any) context.Context {
-	fields, _ := ctx.Value(fieldsKey).([]slog.Attr)
-	newFields := append(fields, slog.Any(key, value))
-	return context.WithValue(ctx, fieldsKey, newFields)
+// LogCtx — контейнер для атрибутов лога
+type LogCtx struct {
+	Fields []slog.Attr
 }
 
-// ErrorWithContext создает лог с ошибкой, вытягивая всё из контекста
-// TODO: Переделать чтобы бли возвращал логгер а не это
-func LogError(ctx context.Context, msg string, err error) {
-	fields, _ := ctx.Value(fieldsKey).([]slog.Attr)
+// AppError — обертка над ошибкой, которая позволяет прикрепить к ней метаданные
+type AppError struct {
+	Cause    error
+	Metadata LogCtx
+}
 
-	attrs := make([]any, len(fields)+1)
-	for i, v := range fields {
-		attrs[i] = v
+func (e *AppError) Error() string { return e.Cause.Error() }
+func (e *AppError) Unwrap() error { return e.Cause }
+
+// --- Работа с Контекстом ---
+
+// FromContext извлекает LogCtx из контекста. Всегда возвращает объект, а не nil.
+func FromContext(ctx context.Context) LogCtx {
+	if v, ok := ctx.Value(ctxKey{}).(LogCtx); ok {
+		return v
 	}
-	attrs[len(fields)] = slog.Any("error", err.Error())
-
-	slog.ErrorContext(ctx, msg, attrs...)
+	return LogCtx{Fields: make([]slog.Attr, 0)}
 }
 
-// TODO: Сделать лог чтобы сохранялся в кастомную ошибку
-type SlogError struct {
-	Msg    string
-	Err    error
-	Fields map[string]any
+// WithField добавляет один атрибут в контекст. Создает копию данных (Thread-safe).
+func WithField(ctx context.Context, key string, val any) context.Context {
+	return WithFields(ctx, slog.Any(key, val))
 }
 
-//func (e *SlogError) Error() string {
-//	return e.Err.Error()
-//}
-//
-//func (e *SlogError) Unwrap() error {
-//
-//}
-//
-//func (e *SlogError) WrapError(ctx context.Context, msg string, err error) SlogError {
-//
-//}
+// WithFields добавляет пачку атрибутов в контекст.
+func WithFields(ctx context.Context, attrs ...slog.Attr) context.Context {
+	prev := FromContext(ctx)
+
+	newFields := make([]slog.Attr, len(prev.Fields), len(prev.Fields)+len(attrs))
+	copy(newFields, prev.Fields)
+	newFields = append(newFields, attrs...)
+
+	return context.WithValue(ctx, ctxKey{}, LogCtx{Fields: newFields})
+}
+
+// --- Работа с Ошибками ---
+
+// WithLog прикрепляет атрибуты к ошибке. Если ошибка уже AppError, дополняет её.
+func WithLog(err error, attrs ...slog.Attr) error {
+	if err == nil {
+		return nil
+	}
+
+	var appErr *AppError
+	if errors.As(err, &appErr) {
+		appErr.Metadata.Fields = append(appErr.Metadata.Fields, attrs...)
+		return appErr
+	}
+
+	return &AppError{
+		Cause:    err,
+		Metadata: LogCtx{Fields: attrs},
+	}
+}
+
+// --- Функции логирования ---
+
+// Info логирует сообщение, автоматически подмешивая поля из контекста.
+func Info(ctx context.Context, msg string, args ...any) {
+	log(ctx, slog.LevelInfo, msg, nil, args...)
+}
+
+// Warn логирует предупреждение с полями из контекста.
+func Warn(ctx context.Context, msg string, args ...any) {
+	log(ctx, slog.LevelWarn, msg, nil, args...)
+}
+
+// Error логирует ошибку, объединяя поля из контекста и самой ошибки.
+func Error(ctx context.Context, msg string, err error, args ...any) {
+	log(ctx, slog.LevelError, msg, err, args...)
+}
+
+// log — внутренняя функция для сборки всех полей воедино.
+func log(ctx context.Context, level slog.Level, msg string, err error, args ...any) {
+	// 1. Поля из контекста
+	ctxData := FromContext(ctx)
+
+	// Оцениваем примерный объем памяти
+	capacity := len(ctxData.Fields) + len(args)
+	if err != nil {
+		capacity += 1
+		var appErr *AppError
+		if errors.As(err, &appErr) {
+			capacity += len(appErr.Metadata.Fields)
+		}
+	}
+
+	finalArgs := make([]any, 0, capacity)
+	finalArgs = append(finalArgs, args...)
+
+	// 2. Поля из контекста
+	for _, attr := range ctxData.Fields {
+		finalArgs = append(finalArgs, attr)
+	}
+
+	// 3. Поля из ошибки
+	if err != nil {
+		finalArgs = append(finalArgs, slog.Any("error", err))
+		var appErr *AppError
+		if errors.As(err, &appErr) {
+			for _, attr := range appErr.Metadata.Fields {
+				finalArgs = append(finalArgs, attr)
+			}
+		}
+	}
+
+	slog.Log(ctx, level, msg, finalArgs...)
+}
