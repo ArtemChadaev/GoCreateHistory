@@ -7,11 +7,14 @@ import (
 
 type Service struct {
 	domain.HistoryService
+	domain.AuthService
 }
 
 func NewService(repos *repository.Repository) *Service {
 	historyService := NewHistoryService(repos.History)
+	authService := NewAuthService(repos.Auth)
 	return &Service{
 		HistoryService: historyService,
+		AuthService:    authService,
 	}
 }

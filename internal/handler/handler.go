@@ -35,6 +35,10 @@ func (h *Handler) Router() chi.Router {
 			//r.Post("/")
 		})
 	})
+	r.Route("/user", func(r chi.Router) {
+		r.Post("/create", h.createUser)
+		r.Post("/login", h.login)
+	})
 
 	return r
 }
