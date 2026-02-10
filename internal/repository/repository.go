@@ -7,10 +7,12 @@ import (
 
 type Repository struct {
 	History domain.HistoryRepository
+	Auth    domain.AuthRepository
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		History: NewHistoryRepository(db),
+		Auth:    NewAuthRepository(db),
 	}
 }
