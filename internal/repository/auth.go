@@ -15,23 +15,18 @@ func NewAuthRepository(db *sqlx.DB) domain.AuthRepository {
 	return &authRepository{db: db}
 }
 
-func (r *authRepository) CreateUser(ctx context.Context, email string, password string) (int, error) {
+func (r *authRepository) CreateUser(ctx context.Context, email string, password string) error {
 	query := `INSERT INTO user_history (email, password) VALUES ($1, $2)`
-	res, err := r.db.ExecContext(ctx, query, email, password)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-	return int(id), nil
+	_, err := r.db.ExecContext(ctx, query, email, password)
+	return err
 }
 func (r *authRepository) GetUserId(ctx context.Context, email string, password string) (int, error) {
-	query := `SELECT id FROM user_history WHERE email = $1 AND password = $2`
-	row := r.db.QueryRowContext(ctx, query, email, password)
+	query := `SELECT user_id FROM user_history WHERE email = $1 AND password = $2`
+
 	var id int
-	if err := row.Scan(&id); err != nil {
+	err := r.db.QueryRowContext(ctx, query, email, password).Scan(&id)
+
+	if err != nil {
 		return 0, err
 	}
 	return id, nil

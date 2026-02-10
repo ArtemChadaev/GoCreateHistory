@@ -2,12 +2,11 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/ArtemChadaev/GoCreateHistory/internal/domain"
 	"github.com/ArtemChadaev/GoCreateHistory/pkg/logger"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -40,17 +39,27 @@ func (h *Handler) loggingMiddleware(next http.Handler) http.Handler {
 
 func (h *Handler) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var t domain.Token
-
-		// 1. Декодируем JSON из тела запроса в структуру
-		err := json.NewDecoder(r.Body).Decode(&t)
-		if err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
+		// 1. Получаем значение заголовка Authorization
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Authorization header is missing", http.StatusUnauthorized)
 			return
 		}
 
-		userID, err := h.service.ParseToken(t.Token)
+		// 2. Заголовок должен быть в формате "Bearer <token>"
+		// Проверяем префикс и отрезаем его
+		const prefix = "Bearer "
+		if !strings.HasPrefix(authHeader, prefix) {
+			http.Error(w, "Invalid authorization format. Use 'Bearer <token>'", http.StatusUnauthorized)
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, prefix)
+
+		// 3. Передаем чистый токен в сервис для парсинга
+		userID, err := h.service.ParseToken(tokenString)
 		if err != nil {
+			logger.Error(r.Context(), "Invalid token", err)
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}

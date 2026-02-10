@@ -69,10 +69,10 @@ func (s *authService) GenerateToken(ctx context.Context, email, password string)
 	return accessToken, nil
 }
 
-func (s *authService) CreateUser(ctx context.Context, email string, password string) (int, error) {
-	userId, err := s.repo.GetUserId(ctx, email, password)
+func (s *authService) CreateUser(ctx context.Context, email string, password string) error {
+	err := s.repo.CreateUser(ctx, email, password)
 	if err != nil {
-		return 0, logger.WithLog(err, slog.String("op", "repo.GetUserId"))
+		return logger.WithLog(err, slog.String("op", "repo.CreateUser"))
 	}
-	return userId, nil
+	return nil
 }

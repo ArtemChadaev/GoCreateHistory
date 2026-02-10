@@ -19,7 +19,7 @@ func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Вообще надо бы сделать валидацию типо изза чего не удоалось создать но влом
-	if _, err := h.service.CreateUser(r.Context(), input.Email, input.Password); err != nil {
+	if err := h.service.CreateUser(r.Context(), input.Email, input.Password); err != nil {
 		logger.Error(r.Context(), "Failed to create user", err)
 		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
