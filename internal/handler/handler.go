@@ -32,7 +32,8 @@ func (h *Handler) Router() chi.Router {
 		//r.Get("/", getAll)
 
 		r.Route("/{id}", func(r chi.Router) {
-			//r.Post("/")
+			r.Post("/freeze", h.freezeHistory)
+			r.Delete("/", h.deleteHistory)
 		})
 	})
 
