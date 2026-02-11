@@ -24,6 +24,7 @@ func (s *historyService) Create(ctx context.Context, req domain.UserRequest) (hI
 	if err != nil {
 		return
 	}
+
 	history := &domain.History{
 		UUID:        hID,
 		UserRequest: req,

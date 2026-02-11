@@ -22,7 +22,7 @@ func main() {
 	cfg, err := config.Load()
 
 	if err != nil {
-		slog.Error("Config Die", err.Error())
+		slog.Error("Config Die", "error", err)
 		os.Exit(1)
 	}
 
@@ -43,7 +43,7 @@ func main() {
 		SSLMode:  "disable",
 	})
 	if err != nil {
-		slog.Error("DB Die", err.Error())
+		slog.Error("DB Die", "error", err)
 		os.Exit(1)
 	}
 
@@ -58,7 +58,7 @@ func main() {
 	srv := new(domain.Server)
 	go func() {
 		if err := srv.Run(cfg.Port, router); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("Server Die", err.Error())
+			slog.Error("Server Die", "error", err)
 			os.Exit(1)
 		}
 	}()
