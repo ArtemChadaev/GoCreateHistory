@@ -1,7 +1,9 @@
+
 package domain
 
 import (
 	"context"
+
 	"time"
 
 	"github.com/google/uuid"
@@ -23,10 +25,11 @@ const (
 type UserRequest struct {
 	UserID      int    `json:"-"`           // Чья это история (Ownership), не должна ни получаться ни возвращаться
 	Description string `json:"description"` // Основное описание истории
-	TokenSize   int    `json:"token_size"`  // Размер истории в токенах
-	ImageSize   int    `json:"image_size"`  // Количество картинок в запросе
-	Save        bool   `json:"save"`
+	ChapterSize int    `json:"chapter_size"` // Количество глав (Number of Chapters)
+	ImageSize   int    `json:"image_size"`   // Количество картинок на главу (Images per Chapter)
+	Save        bool   `json:"save"`         // Сохранить ли историю
 }
+
 type PartChapter struct {
 	Number int `json:"number"` // Номер для последовательности, начиная с 1, чисто для последовательности
 	// Подзаголовок если надо, если нет то пустой и не видно разделения
@@ -45,14 +48,14 @@ type Chapters []Chapter
 type History struct {
 	UUID        uuid.UUID   `json:"uuid" db:"uuid"`             // Публичный ID для клиента
 	BookTitle   string      `json:"book_title" db:"book_title"` // Краткое название (для списка)
-	UserRequest UserRequest `json:"user_request" db:"user_request"`
+	UserRequest UserRequest `json:"user_request" db:"user_request"` // Запрос пользователя
 
 	// Состояние (особенно важно для генерации)
 	Status   HistoryStatus `json:"status" db:"status"`         // "pending", "completed", "failed"
 	ErrorMsg string        `json:"error,omitempty" db:"error"` // Почему не создалось?
 
 	// Временные метки (Timestamps)
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"` // Когда созданаd
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"` // Меняется при изменении статуса
 
 	Chapters Chapters `json:"chapters" db:"chapters"`
